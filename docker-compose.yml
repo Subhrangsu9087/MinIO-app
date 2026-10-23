@@ -1,0 +1,19 @@
+services:
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio-app-storage
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: devadmin
+      MINIO_ROOT_PASSWORD: devpassword123
+      # Allows your Angular dev server (localhost:4201) to PUT directly to MinIO
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+volumes:
+  minio-data:
