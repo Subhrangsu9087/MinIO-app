@@ -1,0 +1,256 @@
+<section class="flex flex-col gap-5" aria-label="Image gallery">
+  <!-- Clean Toolbar -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <!-- Left: Title & Count -->
+    <div class="flex items-center gap-3">
+      <h2 class="text-sm font-semibold text-gray-900">Images</h2>
+      <span class="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+        {{ imageService.images().length }}
+      </span>
+      <span class="text-xs text-gray-400">·</span>
+      <span class="text-xs text-gray-500">{{ totalStorageFormatted() }}</span>
+    </div>
+
+    <!-- Right: Search & Refresh -->
+    <div class="flex items-center gap-2">
+      <!-- Search Input -->
+      <div class="relative flex-1 sm:w-56">
+        <svg class="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+        <input
+          type="text"
+          [value]="searchQuery()"
+          (input)="onSearch($event)"
+          placeholder="Search filename..."
+          class="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-8 pr-7 text-xs text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+        />
+        @if (searchQuery()) {
+          <button
+            type="button"
+            (click)="clearSearch()"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            aria-label="Clear search"
+          >
+            <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        }
+      </div>
+
+      <!-- Refresh Button -->
+      <button
+        type="button"
+        (click)="reload()"
+        [attr.aria-disabled]="imageService.loading()"
+        class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-1"
+      >
+        <svg
+          class="h-3.5 w-3.5 text-gray-500"
+          [class.animate-spin]="imageService.loading()"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.992 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Skeletons -->
+  @if (imageService.loading()) {
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4" aria-busy="true">
+      @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+        <div class="rounded-lg border border-gray-200 bg-white p-3">
+          <div class="aspect-square w-full animate-pulse rounded-md bg-gray-100"></div>
+          <div class="mt-2.5 space-y-1.5">
+            <div class="h-3 w-3/4 animate-pulse rounded bg-gray-100"></div>
+            <div class="h-2.5 w-1/3 animate-pulse rounded bg-gray-100"></div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (imageService.error(); as error) {
+    <div class="flex flex-col items-center justify-center gap-3 rounded-xl border border-red-200 bg-red-50 p-8 text-center" role="alert">
+      <svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+      </svg>
+      <div>
+        <p class="text-xs font-semibold text-red-800">{{ error }}</p>
+      </div>
+      <button
+        type="button"
+        (click)="reload()"
+        class="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+      >
+        Retry
+      </button>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!imageService.loading() && !imageService.error() && imageService.isEmpty()) {
+    <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
+      <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-3">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+        </svg>
+      </div>
+      <p class="text-xs font-medium text-gray-900">No images stored yet</p>
+      <p class="mt-1 text-xs text-gray-500">Upload an image to see it here.</p>
+    </div>
+  }
+
+  <!-- Search Empty -->
+  @if (!imageService.loading() && !imageService.isEmpty() && filteredImages().length === 0) {
+    <div class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-8 text-center">
+      <p class="text-xs font-medium text-gray-900">No images match "{{ searchQuery() }}"</p>
+      <button
+        type="button"
+        (click)="clearSearch()"
+        class="mt-2 text-xs text-blue-600 hover:underline"
+      >
+        Clear search
+      </button>
+    </div>
+  }
+
+  <!-- Image Grid -->
+  @if (!imageService.loading() && filteredImages().length > 0) {
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4" role="list">
+      @for (image of filteredImages(); track image.objectName) {
+        <article class="group relative flex flex-col rounded-lg border border-gray-200 bg-white p-2.5 transition-shadow hover:shadow-sm hover:border-gray-300">
+          <!-- Thumbnail -->
+          <div
+            class="relative aspect-square w-full cursor-pointer overflow-hidden rounded-md bg-gray-100"
+            (click)="openPreview(image)"
+          >
+            <img
+              [src]="image.previewUrl"
+              [alt]="extractFilename(image.objectName)"
+              class="h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+
+          <!-- Metadata & Actions -->
+          <div class="mt-2.5 flex items-start justify-between gap-1">
+            <div class="min-w-0 flex-1">
+              <h3
+                class="truncate text-xs font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
+                [title]="extractFilename(image.objectName)"
+                (click)="openPreview(image)"
+              >
+                {{ extractFilename(image.objectName) }}
+              </h3>
+              <p class="mt-0.5 text-[11px] text-gray-400">
+                {{ formatSize(image.size) }} · {{ image.lastModified | date: 'shortDate' }}
+              </p>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                (click)="copyLink(image.previewUrl, $event)"
+                class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                title="Copy presigned URL"
+              >
+                @if (copiedUrl() === image.previewUrl) {
+                  <span class="text-[10px] font-semibold text-emerald-600">Copied</span>
+                } @else {
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                  </svg>
+                }
+              </button>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  <!-- Minimalist Lightbox Modal -->
+  @if (selectedImage(); as selected) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60"
+      (click)="closePreview()"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image preview modal"
+    >
+      <div
+        class="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
+        (click)="$event.stopPropagation()"
+      >
+        <!-- Modal Top Bar -->
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3 bg-white">
+          <div class="min-w-0 pr-4">
+            <h3 class="truncate text-sm font-semibold text-gray-900">{{ extractFilename(selected.objectName) }}</h3>
+            <p class="truncate text-xs text-gray-400">{{ selected.objectName }}</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="copyLink(selected.previewUrl)"
+              class="rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              @if (copiedUrl() === selected.previewUrl) {
+                <span class="text-emerald-600">Copied</span>
+              } @else {
+                <span>Copy URL</span>
+              }
+            </button>
+
+            <a
+              [href]="selected.previewUrl"
+              target="_blank"
+              download
+              class="rounded-md bg-gray-900 px-3 py-1 text-xs font-medium text-white hover:bg-gray-800"
+            >
+              Download
+            </a>
+
+            <button
+              type="button"
+              (click)="closePreview()"
+              class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              aria-label="Close dialog"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Image Area -->
+        <div class="flex flex-1 items-center justify-center overflow-auto bg-gray-50 p-4">
+          <img
+            [src]="selected.previewUrl"
+            [alt]="extractFilename(selected.objectName)"
+            class="max-h-[65vh] w-auto max-w-full rounded-md object-contain border border-gray-200"
+          />
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-between border-t border-gray-200 px-5 py-2.5 text-xs text-gray-500 bg-white">
+          <div class="flex items-center gap-4">
+            <span>Size: <strong class="text-gray-700">{{ formatSize(selected.size) }}</strong></span>
+            <span>Modified: <strong class="text-gray-700">{{ selected.lastModified | date: 'medium' }}</strong></span>
+          </div>
+          <span>S3 Presigned URL</span>
+        </div>
+      </div>
+    </div>
+  }
+</section>
