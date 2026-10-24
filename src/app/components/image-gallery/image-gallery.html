@@ -134,7 +134,7 @@
           >
             <img
               [src]="image.previewUrl"
-              [alt]="extractFilename(image.objectName)"
+              [alt]="image.originalName"
               class="h-full w-full object-cover"
               loading="lazy"
             />
@@ -145,13 +145,13 @@
             <div class="min-w-0 flex-1">
               <h3
                 class="truncate text-xs font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
-                [title]="extractFilename(image.objectName)"
+                [title]="image.originalName"
                 (click)="openPreview(image)"
               >
-                {{ extractFilename(image.objectName) }}
+                {{ image.originalName }}
               </h3>
               <p class="mt-0.5 text-[11px] text-gray-400">
-                {{ formatSize(image.size) }} · {{ image.lastModified | date: 'shortDate' }}
+                {{ formatSize(image.size) }} · {{ image.createdAt | date: 'shortDate' }}
               </p>
             </div>
 
@@ -194,7 +194,7 @@
         <!-- Modal Top Bar -->
         <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3 bg-white">
           <div class="min-w-0 pr-4">
-            <h3 class="truncate text-sm font-semibold text-gray-900">{{ extractFilename(selected.objectName) }}</h3>
+            <h3 class="truncate text-sm font-semibold text-gray-900">{{ selected.originalName }}</h3>
             <p class="truncate text-xs text-gray-400">{{ selected.objectName }}</p>
           </div>
 
@@ -237,7 +237,7 @@
         <div class="flex flex-1 items-center justify-center overflow-auto bg-gray-50 p-4">
           <img
             [src]="selected.previewUrl"
-            [alt]="extractFilename(selected.objectName)"
+            [alt]="selected.originalName"
             class="max-h-[65vh] w-auto max-w-full rounded-md object-contain border border-gray-200"
           />
         </div>
@@ -246,7 +246,7 @@
         <div class="flex items-center justify-between border-t border-gray-200 px-5 py-2.5 text-xs text-gray-500 bg-white">
           <div class="flex items-center gap-4">
             <span>Size: <strong class="text-gray-700">{{ formatSize(selected.size) }}</strong></span>
-            <span>Modified: <strong class="text-gray-700">{{ selected.lastModified | date: 'medium' }}</strong></span>
+            <span>Modified: <strong class="text-gray-700">{{ selected.createdAt | date: 'medium' }}</strong></span>
           </div>
           <span>S3 Presigned URL</span>
         </div>

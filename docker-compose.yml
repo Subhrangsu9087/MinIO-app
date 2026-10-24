@@ -1,4 +1,17 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: minio-app-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword123
+      POSTGRES_DB: appdb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
   minio:
     image: cgr.dev/chainguard/minio:latest
     container_name: minio-app-storage
@@ -16,3 +29,4 @@ services:
 
 volumes:
   minio-data:
+  postgres-data:

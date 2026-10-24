@@ -1,9 +1,27 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { ApiResponse } from '../models/api-response';
 
 export interface UploadedImage {
   objectName: string;
+  previewUrl: string;
+}
+
+interface UploadRequestResponse {
+  uploadUrl: string;
+  objectName: string;
+  imageId: number;
+}
+
+interface ConfirmUploadResponse {
+  id: number;
+  objectName: string;
+  originalName: string;
+  size: number;
+  mimeType: string | null;
+  status: string;
+  createdAt: string;
   previewUrl: string;
 }
 
@@ -15,28 +33,54 @@ export class UploadService {
   readonly progress = signal(0);
   readonly error = signal<string | null>(null);
 
+  /**
+   * Two-phase upload flow:
+   *
+   * Phase 1: POST /api/uploads/request  → validates size & mimeType, creates DB row (status=pending), returns presigned URL
+   * Phase 2: PUT binary to MinIO        → direct client-to-storage upload
+   * Phase 3: POST /api/uploads/confirm  → transitions DB row to status=ready, returns previewUrl
+   */
   async uploadFile(file: File): Promise<UploadedImage | null> {
     this.uploading.set(true);
     this.error.set(null);
     this.progress.set(0);
 
     try {
-      const { url, objectName } = await firstValueFrom(
-        this.http.get<{ url: string; objectName: string }>(
-          '/api/upload-url',
-          { params: { filename: file.name } },
-        ),
-      );
-
-      await this.putWithProgress(url, file);
-
-      const { url: previewUrl } = await firstValueFrom(
-        this.http.get<{ url: string }>('/api/image-url', {
-          params: { objectName },
+      // Phase 1: Request upload — server validates size & mimeType, creates pending DB row
+      const requestRes = await firstValueFrom(
+        this.http.post<ApiResponse<UploadRequestResponse>>('/api/uploads/request', {
+          filename: file.name,
+          size: file.size,
+          mimeType: file.type || 'application/octet-stream',
         }),
       );
 
-      return { objectName, previewUrl };
+      if (!requestRes.success) {
+        this.error.set(requestRes.error?.message ?? 'Upload request rejected');
+        return null;
+      }
+
+      const { uploadUrl, objectName } = requestRes.data;
+
+      // Phase 2: Upload binary directly to MinIO via presigned URL
+      await this.putWithProgress(uploadUrl, file);
+
+      // Phase 3: Confirm upload — server transitions DB row to 'ready'
+      const confirmRes = await firstValueFrom(
+        this.http.post<ApiResponse<ConfirmUploadResponse>>('/api/uploads/confirm', {
+          objectName,
+        }),
+      );
+
+      if (!confirmRes.success) {
+        this.error.set(confirmRes.error?.message ?? 'Upload confirmation failed');
+        return null;
+      }
+
+      return {
+        objectName: confirmRes.data.objectName,
+        previewUrl: confirmRes.data.previewUrl,
+      };
     } catch {
       this.error.set('Upload failed. Please try again.');
       return null;

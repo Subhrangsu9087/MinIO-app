@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ImageService, ImageWithUrl } from '../../services/image.service';
+import { ImageService, ImageObject } from '../../services/image.service';
 
 @Component({
   selector: 'app-image-gallery',
@@ -16,7 +16,7 @@ export class ImageGallery implements OnInit {
   readonly searchQuery = signal('');
 
   // Selected image for modal preview
-  readonly selectedImage = signal<ImageWithUrl | null>(null);
+  readonly selectedImage = signal<ImageObject | null>(null);
 
   // Copied indicator
   readonly copiedUrl = signal<string | null>(null);
@@ -27,7 +27,7 @@ export class ImageGallery implements OnInit {
     const list = this.imageService.images();
     if (!q) return list;
     return list.filter((img) =>
-      this.extractFilename(img.objectName).toLowerCase().includes(q)
+      img.originalName.toLowerCase().includes(q),
     );
   });
 
@@ -54,7 +54,7 @@ export class ImageGallery implements OnInit {
     this.searchQuery.set('');
   }
 
-  openPreview(image: ImageWithUrl): void {
+  openPreview(image: ImageObject): void {
     this.selectedImage.set(image);
   }
 
@@ -80,13 +80,5 @@ export class ImageGallery implements OnInit {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
-  extractFilename(objectName: string): string {
-    const parts = objectName.split('/');
-    const full = parts[parts.length - 1];
-    // Strip timestamp prefix: "1729680000000-photo.jpg" -> "photo.jpg"
-    const dashIndex = full.indexOf('-');
-    return dashIndex > 0 ? full.substring(dashIndex + 1) : full;
   }
 }

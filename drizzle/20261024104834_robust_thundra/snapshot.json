@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "6ec45a8b-75a3-414e-8a87-db5abd71495b",
+  "prevIds": [
+    "a8776716-e97f-4cd5-a07c-9e382f165272"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "images",
+        "status"
+      ],
+      "writes": [
+        "s|col|public.images.status",
+        "n|col|public.images.status",
+        "e|col|public.images.status"
+      ],
+      "reads": [
+        "n|tbl|public.images",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "images",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'pending'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}
