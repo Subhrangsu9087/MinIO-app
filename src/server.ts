@@ -9,6 +9,9 @@ import { Client } from 'minio';
 import { join, extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { desc, eq, and, lt } from 'drizzle-orm';
+import cors from 'cors';
+import { apiReference } from '@scalar/express-api-reference';
+import { openApiSpec } from './openapi';
 import { db } from './db';
 import {
   ConfirmUploadSchema,
@@ -48,7 +51,24 @@ const minioClient = new Client({
 });
 const BUCKET = 'images';
 
+app.use(cors());
 app.use(express.json());
+
+// OpenAPI Specification & Interactive API Playground
+app.get('/api/openapi.json', (_req: Request, res: Response): void => {
+  res.json(openApiSpec);
+});
+
+app.use(
+  '/docs',
+  apiReference({
+    spec: {
+      content: openApiSpec,
+    },
+    pageTitle: 'MinIO & PostgreSQL API Playground',
+    theme: 'default',
+  }),
+);
 
 // --- API routes ---
 
